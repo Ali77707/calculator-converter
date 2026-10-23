@@ -18,8 +18,6 @@ class NotFoundScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.search_off, size: 72, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
           Text(
             'Ошибка 404',
             textAlign: TextAlign.center,
@@ -32,10 +30,9 @@ class NotFoundScreen extends StatelessWidget {
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
+          FilledButton(
             onPressed: () => context.go('/'),
-            icon: const Icon(Icons.home),
-            label: const Text('На главную'),
+            child: const Text('На главную'),
           ),
         ],
       ),

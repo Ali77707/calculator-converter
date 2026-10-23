@@ -8,35 +8,20 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return PageLayout(
-      title: 'Главная',
-      maxWidth: 560,
+      title: 'Автосервис',
+      maxWidth: 640,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 16),
-          Text(
-            'Калькулятор и конвертер валют',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall,
+          FilledButton(
+            onPressed: () => context.go('/cars'),
+            child: const Text('Автомобили'),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Выберите раздел.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 32),
-          FilledButton.icon(
-            onPressed: () => context.go('/calculator'),
-            label: const Text('Калькулятор'),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: () => context.go('/converter'),
-            label: const Text('Конвертер валют'),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: () => context.go('/clients'),
+            child: const Text('Клиенты'),
           ),
         ],
       ),

@@ -8,6 +8,7 @@ class PageLayout extends StatelessWidget {
     required this.title,
     required this.child,
     this.maxWidth = 520,
+    this.leading,
     this.actions,
   });
 
@@ -17,6 +18,8 @@ class PageLayout extends StatelessWidget {
 
   final double maxWidth;
 
+  final Widget? leading;
+
   final List<Widget>? actions;
 
   @override
@@ -24,6 +27,7 @@ class PageLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        leading: leading,
         actions: [if (actions != null) ...actions!, const ThemeToggleButton()],
       ),
       body: SafeArea(

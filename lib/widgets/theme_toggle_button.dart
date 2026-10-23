@@ -11,9 +11,6 @@ class ThemeToggleButton extends StatelessWidget {
       listenable: themeController,
       builder: (context, _) {
         return IconButton(
-          tooltip: themeController.isDark
-              ? 'Включить светлую тему'
-              : 'Включить тёмную тему',
           onPressed: themeController.toggle,
           icon: Icon(
             themeController.isDark ? Icons.light_mode : Icons.dark_mode,
