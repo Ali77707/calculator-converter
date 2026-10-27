@@ -1,16 +1,25 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/client.dart';
 import '../models/client_query.dart';
 import '../models/page_result.dart';
 import 'client_repository.dart';
+import 'json_store.dart';
 import 'seed_data.dart';
 
 class InMemoryClientRepository implements ClientRepository {
-  InMemoryClientRepository({List<Client>? seed})
-    : _clients = List.of(seed ?? seedClients()) {
+  InMemoryClientRepository({List<Client>? seed, SharedPreferences? prefs})
+    : _store = JsonStore(prefs, 'clients_v1'),
+      _clients = <Client>[] {
+    final initial = seed ?? seedClients();
+    _clients = prefs == null
+        ? List.of(initial)
+        : _store.read(Client.fromJson, initial);
     _nextId = _clients.fold<int>(1, (max, c) => c.id >= max ? c.id + 1 : max);
   }
 
-  final List<Client> _clients;
+  final JsonStore _store;
+  late List<Client> _clients;
   late int _nextId;
 
   static const Duration _latency = Duration(milliseconds: 250);
@@ -64,6 +73,13 @@ class InMemoryClientRepository implements ClientRepository {
   }
 
   @override
+  Future<List<Client>> findAll({bool includeDeleted = false}) async {
+    return _clients
+        .where((c) => includeDeleted || !c.isDeleted)
+        .toList(growable: false);
+  }
+
+  @override
   Future<Client?> findById(int id) async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
     for (final client in _clients) {
@@ -86,6 +102,7 @@ class InMemoryClientRepository implements ClientRepository {
       registeredAt: client.registeredAt,
     );
     _clients.add(created);
+    await _persist();
     return created;
   }
 
@@ -95,6 +112,7 @@ class InMemoryClientRepository implements ClientRepository {
     final i = _clients.indexWhere((c) => c.id == client.id);
     if (i == -1) throw StateError('Клиент ${client.id} не найден');
     _clients[i] = client;
+    await _persist();
     return client;
   }
 
@@ -104,12 +122,14 @@ class InMemoryClientRepository implements ClientRepository {
     final i = _clients.indexWhere((c) => c.id == id);
     if (i == -1) throw StateError('Клиент $id не найден');
     _clients[i] = _clients[i].copyWith(deletedAt: DateTime.now());
+    await _persist();
   }
 
   @override
   Future<void> hardDelete(int id) async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
     _clients.removeWhere((c) => c.id == id);
+    await _persist();
   }
 
   @override
@@ -118,6 +138,7 @@ class InMemoryClientRepository implements ClientRepository {
     final i = _clients.indexWhere((c) => c.id == id);
     if (i == -1) throw StateError('Клиент $id не найден');
     _clients[i] = _clients[i].copyWith(clearDeletedAt: true);
+    await _persist();
   }
 
   @override
@@ -131,6 +152,9 @@ class InMemoryClientRepository implements ClientRepository {
         count++;
       }
     }
+    await _persist();
     return count;
   }
+
+  Future<void> _persist() => _store.write(_clients, (c) => c.toJson());
 }

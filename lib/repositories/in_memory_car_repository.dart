@@ -1,15 +1,25 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/car.dart';
 import '../models/car_query.dart';
 import '../models/page_result.dart';
 import 'car_repository.dart';
+import 'json_store.dart';
 import 'seed_data.dart';
 
 class InMemoryCarRepository implements CarRepository {
-  InMemoryCarRepository({List<Car>? seed}) : _cars = List.of(seed ?? seedCars()) {
+  InMemoryCarRepository({List<Car>? seed, SharedPreferences? prefs})
+    : _store = JsonStore(prefs, 'cars_v1'),
+      _cars = <Car>[] {
+    final initial = seed ?? seedCars();
+    _cars = prefs == null
+        ? List.of(initial)
+        : _store.read(Car.fromJson, initial);
     _nextId = _cars.fold<int>(1, (max, c) => c.id >= max ? c.id + 1 : max);
   }
 
-  final List<Car> _cars;
+  final JsonStore _store;
+  late List<Car> _cars;
   late int _nextId;
 
   static const Duration _latency = Duration(milliseconds: 250);
@@ -60,16 +70,21 @@ class InMemoryCarRepository implements CarRepository {
     });
 
     final total = rows.length;
-
     final totalPages = total == 0 ? 1 : (total / q.size).ceil();
     final page = q.page < 1 ? 1 : (q.page > totalPages ? totalPages : q.page);
 
     final from = (page - 1) * q.size;
-
     final to = (from + q.size) > total ? total : (from + q.size);
     final items = from >= total ? <Car>[] : rows.sublist(from, to);
 
     return PageResult(items: items, page: page, size: q.size, total: total);
+  }
+
+  @override
+  Future<List<Car>> findAll({bool includeDeleted = false}) async {
+    return _cars
+        .where((c) => includeDeleted || !c.isDeleted)
+        .toList(growable: false);
   }
 
   @override
@@ -79,6 +94,11 @@ class InMemoryCarRepository implements CarRepository {
       if (car.id == id) return car;
     }
     return null;
+  }
+
+  @override
+  Future<int> countByMake(int makeId) async {
+    return _cars.where((c) => c.makeId == makeId).length;
   }
 
   @override
@@ -105,6 +125,7 @@ class InMemoryCarRepository implements CarRepository {
       ownerIds: car.ownerIds,
     );
     _cars.add(created);
+    await _persist();
     return created;
   }
 
@@ -114,6 +135,7 @@ class InMemoryCarRepository implements CarRepository {
     final i = _cars.indexWhere((c) => c.id == car.id);
     if (i == -1) throw StateError('Автомобиль ${car.id} не найден');
     _cars[i] = car;
+    await _persist();
     return car;
   }
 
@@ -123,12 +145,14 @@ class InMemoryCarRepository implements CarRepository {
     final i = _cars.indexWhere((c) => c.id == id);
     if (i == -1) throw StateError('Автомобиль $id не найден');
     _cars[i] = _cars[i].copyWith(deletedAt: DateTime.now());
+    await _persist();
   }
 
   @override
   Future<void> hardDelete(int id) async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
     _cars.removeWhere((c) => c.id == id);
+    await _persist();
   }
 
   @override
@@ -137,6 +161,7 @@ class InMemoryCarRepository implements CarRepository {
     final i = _cars.indexWhere((c) => c.id == id);
     if (i == -1) throw StateError('Автомобиль $id не найден');
     _cars[i] = _cars[i].copyWith(clearDeletedAt: true);
+    await _persist();
   }
 
   @override
@@ -144,13 +169,15 @@ class InMemoryCarRepository implements CarRepository {
     await Future<void>.delayed(const Duration(milliseconds: 120));
     var count = 0;
     for (final id in ids) {
-
       final i = _cars.indexWhere((c) => c.id == id && !c.isDeleted);
       if (i != -1) {
         _cars[i] = _cars[i].copyWith(deletedAt: DateTime.now());
         count++;
       }
     }
+    await _persist();
     return count;
   }
+
+  Future<void> _persist() => _store.write(_cars, (c) => c.toJson());
 }

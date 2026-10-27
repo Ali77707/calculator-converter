@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-
-
 class DebouncedTextField extends StatefulWidget {
   const DebouncedTextField({
     super.key,
@@ -49,7 +47,6 @@ class _DebouncedTextFieldState extends State<DebouncedTextField> {
   void didUpdateWidget(covariant DebouncedTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.value != oldWidget.value && widget.value != _lastEmitted) {
-
       _timer?.cancel();
       _controller.text = widget.value;
       _lastEmitted = widget.value;
@@ -97,10 +94,7 @@ class _DebouncedTextFieldState extends State<DebouncedTextField> {
         isDense: true,
         suffixIcon: !widget.showClear || _isEmpty
             ? null
-            : IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: _clear,
-              ),
+            : IconButton(icon: const Icon(Icons.clear), onPressed: _clear),
       ),
       onChanged: _onChanged,
     );

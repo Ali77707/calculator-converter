@@ -1,5 +1,10 @@
+import '../models/brand.dart';
 import '../models/car.dart';
 import '../models/client.dart';
+import '../models/loyalty_card.dart';
+import '../models/service_order.dart';
+
+import '../models/dictionaries.dart';
 
 List<Car> seedCars() => [
   Car(
@@ -473,5 +478,105 @@ List<Client> seedClients() => [
     email: 'orlova@list.ru',
     registeredAt: DateTime(2018, 6, 6),
     deletedAt: DateTime(2024, 5, 1),
+  ),
+];
+
+List<Brand> seedBrands() => [
+  for (final make in makes) Brand(id: make.id, name: make.name, country: '—'),
+];
+
+List<LoyaltyCard> seedLoyaltyCards() => [
+  for (final client in seedClients())
+    if (!client.isDeleted)
+      LoyaltyCard(
+        id: client.id,
+        clientId: client.id,
+        number: 'LC-${client.id.toString().padLeft(3, '0')}',
+        issuedAt: DateTime(2026, 10, 1).add(Duration(days: client.id * 2)),
+        discountPercent: client.id.isEven ? 10 : 5,
+        active: true,
+      ),
+];
+
+List<ServiceOrder> seedServiceOrders() => [
+  ServiceOrder(
+    id: 1,
+    number: 'Order-2026-0001',
+    carId: 1,
+    clientId: 1,
+    description: 'Плановое техническое обслуживание',
+    status: 'Выдан',
+    price: 18500,
+    createdAt: DateTime(2026, 10, 20),
+  ),
+  ServiceOrder(
+    id: 2,
+    number: 'Order-2026-0002',
+    carId: 2,
+    clientId: 3,
+    description: 'Замена тормозных колодок',
+    status: 'Выдан',
+    price: 12400,
+    createdAt: DateTime(2026, 10, 21),
+  ),
+  ServiceOrder(
+    id: 3,
+    number: 'Order-2026-0003',
+    carId: 3,
+    clientId: 4,
+    description: 'Диагностика двигателя',
+    status: 'Готов',
+    price: 7600,
+    createdAt: DateTime(2026, 10, 22),
+  ),
+  ServiceOrder(
+    id: 4,
+    number: 'Order-2026-0004',
+    carId: 5,
+    clientId: 1,
+    description: 'Замена масла и фильтров',
+    status: 'Готов',
+    price: 5400,
+    createdAt: DateTime(2026, 10, 23),
+  ),
+  ServiceOrder(
+    id: 5,
+    number: 'Order-2026-0005',
+    carId: 4,
+    clientId: 5,
+    description: 'Ремонт передней подвески',
+    status: 'В работе',
+    price: 28700,
+    createdAt: DateTime(2026, 10, 24),
+  ),
+  ServiceOrder(
+    id: 6,
+    number: 'Order-2026-0006',
+    carId: 7,
+    clientId: 2,
+    description: 'Замена аккумулятора',
+    status: 'В работе',
+    price: 15200,
+    createdAt: DateTime(2026, 10, 25),
+  ),
+  ServiceOrder(
+    id: 7,
+    number: 'Order-2026-0007',
+    carId: 18,
+    clientId: 8,
+    description: 'Замена лобового стекла',
+    status: 'Новый',
+    price: 9800,
+    createdAt: DateTime(2026, 10, 26),
+  ),
+  ServiceOrder(
+    id: 8,
+    number: 'Order-2026-0008',
+    carId: 21,
+    clientId: 11,
+    description: 'Шиномонтаж и балансировка колёс',
+    status: 'Новый',
+    price: 4600,
+    createdAt: DateTime(2026, 10, 27),
   ),
 ];

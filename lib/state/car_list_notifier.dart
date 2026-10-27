@@ -34,7 +34,6 @@ class CarListNotifier extends ChangeNotifier {
   Future<void> load() async {
     _status = LoadStatus.loading;
     _error = null;
-    notifyListeners();
     try {
       _result = await _repository.find(_query);
 

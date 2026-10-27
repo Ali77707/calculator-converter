@@ -22,12 +22,7 @@ class LoadingView extends StatelessWidget {
 }
 
 class EmptyView extends StatelessWidget {
-  const EmptyView({
-    super.key,
-    required this.message,
-    this.hint,
-    this.onReset,
-  });
+  const EmptyView({super.key, required this.message, this.hint, this.onReset});
 
   final String message;
   final String? hint;
@@ -97,10 +92,7 @@ class ErrorView extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 20),
-              FilledButton(
-                onPressed: onRetry,
-                child: const Text('Повторить'),
-              ),
+              FilledButton(onPressed: onRetry, child: const Text('Повторить')),
             ],
           ],
         ),

@@ -46,24 +46,11 @@ class EntityTable<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ids = items.map(idOf).toList();
-    final allSelected = ids.isNotEmpty && ids.every(selected.contains);
     final theme = Theme.of(context);
 
     final dataColumns = <DataColumn>[];
 
     int? sortColumnIndex;
-
-    if (onSelectAll != null) {
-      dataColumns.add(
-        DataColumn(
-          label: Checkbox(
-            value: allSelected,
-            tristate: ids.isEmpty,
-            onChanged: (value) => onSelectAll!(ids, value ?? false),
-          ),
-        ),
-      );
-    }
 
     for (var i = 0; i < columns.length; i++) {
       final column = columns[i];
@@ -77,7 +64,7 @@ class EntityTable<T> extends StatelessWidget {
         ),
       );
       if (column.sortField != null && column.sortField == sortField) {
-        sortColumnIndex = i + (onSelectAll == null ? 0 : 1);
+        sortColumnIndex = i;
       }
     }
 
@@ -93,18 +80,14 @@ class EntityTable<T> extends StatelessWidget {
       columns: dataColumns,
       sortColumnIndex: sortColumnIndex,
       sortAscending: sortAscending,
+      showCheckboxColumn: onToggleSelect != null || onSelectAll != null,
+      onSelectAll: onSelectAll == null
+          ? null
+          : (value) => onSelectAll!(ids, value ?? false),
       rows: items.map((item) {
         final id = idOf(item);
         final isSelected = selected.contains(id);
         final cells = <DataCell>[
-          if (onSelectAll != null)
-            DataCell(
-              Checkbox(
-                value: isSelected,
-
-                onChanged: null,
-              ),
-            ),
           ...columns.map((c) => DataCell(c.build(item))),
           if (actions != null)
             DataCell(
@@ -133,12 +116,10 @@ class EntityTable<T> extends StatelessWidget {
 
       child: LayoutBuilder(
         builder: (context, constraints) {
-
           return SingleChildScrollView(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: ConstrainedBox(
-
                 constraints: BoxConstraints(
                   minWidth: constraints.maxWidth.isFinite
                       ? constraints.maxWidth

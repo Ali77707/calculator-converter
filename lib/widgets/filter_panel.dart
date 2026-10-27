@@ -32,10 +32,7 @@ class FilterPanel extends StatelessWidget {
           children: [
             ...children,
             if (onReset != null)
-              OutlinedButton(
-                onPressed: onReset,
-                child: const Text('Сбросить'),
-              ),
+              OutlinedButton(onPressed: onReset, child: const Text('Сбросить')),
             if (trailing != null) trailing!,
           ],
         ),

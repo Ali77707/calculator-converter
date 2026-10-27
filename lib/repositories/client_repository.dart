@@ -4,6 +4,7 @@ import '../models/page_result.dart';
 
 abstract interface class ClientRepository {
   Future<PageResult<Client>> find(ClientQuery query);
+  Future<List<Client>> findAll({bool includeDeleted = false});
   Future<Client?> findById(int id);
   Future<Client> create(Client client);
   Future<Client> update(Client client);

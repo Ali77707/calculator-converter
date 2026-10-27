@@ -30,7 +30,6 @@ class ClientListScreen extends StatefulWidget {
 }
 
 class _ClientListScreenState extends State<ClientListScreen> {
-
   late String _lastLocation;
 
   @override
@@ -68,7 +67,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
   void _showError(Object error) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Не выполнить действие: $error')),
+      SnackBar(content: Text('Не удалось выполнить действие: $error')),
     );
   }
 
@@ -174,6 +173,12 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   List<Widget> _rowActions(BuildContext context, Client client) {
     return [
+      if (!client.isDeleted)
+        IconButton(
+          tooltip: 'Изменить',
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () => context.go('/clients/${client.id}/edit'),
+        ),
       IconButton(
         icon: const Icon(Icons.chevron_right),
         onPressed: () => context.go('/clients/${client.id}'),
@@ -198,8 +203,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   void _onSort(String field) {
     final query = context.read<ClientListNotifier>().query;
-    final ascending =
-        field == query.sortField ? !query.sortAscending : true;
+    final ascending = field == query.sortField ? !query.sortAscending : true;
     _onQueryChanged(
       query.copyWith(sortField: field, sortAscending: ascending),
       pushHistory: true,
@@ -255,14 +259,21 @@ class _ClientListScreenState extends State<ClientListScreen> {
             : 'Всего записей: ${notifier.result.total}',
         selectedCount: notifier.selectedCount,
         itemsAvailable: notifier.result.items.isNotEmpty,
-        onSelectAllOnPage: () => context
-            .read<ClientListNotifier>()
-            .selectAll(notifier.result.items.map((c) => c.id), true),
-        onClearSelection: () => context
-            .read<ClientListNotifier>()
-            .selectAll(notifier.selected.toList(), false),
+        onSelectAllOnPage: () => context.read<ClientListNotifier>().selectAll(
+          notifier.result.items.map((c) => c.id),
+          true,
+        ),
+        onClearSelection: () => context.read<ClientListNotifier>().selectAll(
+          notifier.selected.toList(),
+          false,
+        ),
         onDeleteSelected: _confirmDeleteSelected,
         deleteLabel: 'Удалить выбранные',
+        trailing: FilledButton.icon(
+          onPressed: () => context.go('/clients/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Добавить'),
+        ),
       ),
       filters: FilterPanel(
         onReset: _reset,
@@ -342,14 +353,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
         availableSizes: ClientQuery.pageSizes,
         firstItemIndex: notifier.result.firstItemIndex,
         lastItemIndex: notifier.result.lastItemIndex,
-        onPageChanged: (page) => _onQueryChanged(
-          query.copyWith(page: page),
-          pushHistory: true,
-        ),
-        onSizeChanged: (size) => _onQueryChanged(
-          query.copyWith(size: size),
-          pushHistory: true,
-        ),
+        onPageChanged: (page) =>
+            _onQueryChanged(query.copyWith(page: page), pushHistory: true),
+        onSizeChanged: (size) =>
+            _onQueryChanged(query.copyWith(size: size), pushHistory: true),
       ),
     );
   }
@@ -415,7 +422,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(client.fullName, style: theme.textTheme.titleMedium),
+                child: Text(
+                  client.fullName,
+                  style: theme.textTheme.titleMedium,
+                ),
               ),
               if (client.isDeleted)
                 Chip(
@@ -426,7 +436,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text('${client.city} · ${client.phone}', style: theme.textTheme.bodyMedium),
+          Text(
+            '${client.city} · ${client.phone}',
+            style: theme.textTheme.bodyMedium,
+          ),
           Text(client.email, style: theme.textTheme.bodySmall),
           Text(
             'В автосервисе с ${ruDate(client.registeredAt)}',
@@ -441,6 +454,12 @@ class _ClientListScreenState extends State<ClientListScreen> {
                 icon: const Icon(Icons.chevron_right),
                 label: const Text('Открыть'),
               ),
+              if (!client.isDeleted)
+                TextButton.icon(
+                  onPressed: () => context.go('/clients/${client.id}/edit'),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Изменить'),
+                ),
               if (client.isDeleted)
                 TextButton.icon(
                   onPressed: () => _restore(client),
@@ -466,4 +485,3 @@ class _ClientListScreenState extends State<ClientListScreen> {
     );
   }
 }
-

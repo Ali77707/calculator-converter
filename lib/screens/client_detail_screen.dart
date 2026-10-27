@@ -6,8 +6,11 @@ import '../format.dart';
 import '../models/car.dart';
 import '../models/client.dart';
 import '../models/dictionaries.dart';
+import '../models/loyalty_card.dart';
+import '../repositories/brand_repository.dart';
 import '../repositories/car_repository.dart';
 import '../repositories/client_repository.dart';
+import '../repositories/loyalty_card_repository.dart';
 import '../widgets/detail_fields.dart';
 import '../widgets/list_state_view.dart';
 import '../widgets/page_layout.dart';
@@ -24,8 +27,15 @@ class ClientDetailScreen extends StatefulWidget {
 }
 
 class _ClientDetailScreenState extends State<ClientDetailScreen> {
-
-  late Future<({Client? client, List<Car> cars})> _loading;
+  late Future<
+    ({
+      Client? client,
+      List<Car> cars,
+      Map<int, String> brandNames,
+      LoyaltyCard? card,
+    })
+  >
+  _loading;
 
   @override
   void initState() {
@@ -33,14 +43,47 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     _loading = _load();
   }
 
-  Future<({Client? client, List<Car> cars})> _load() async {
-
+  Future<
+    ({
+      Client? client,
+      List<Car> cars,
+      Map<int, String> brandNames,
+      LoyaltyCard? card,
+    })
+  >
+  _load() async {
     final clients = context.read<ClientRepository>();
     final carsRepository = context.read<CarRepository>();
+    final brandsRepository = context.read<BrandRepository>();
+    final cardsRepository = context.read<LoyaltyCardRepository>();
     final client = await clients.findById(widget.id);
-    if (client == null) return (client: null, cars: <Car>[]);
+    if (client == null) {
+      return (
+        client: null,
+        cars: <Car>[],
+        brandNames: <int, String>{},
+        card: null,
+      );
+    }
     final cars = await carsRepository.findByOwner(client.id);
-    return (client: client, cars: cars);
+    final brands = await brandsRepository.findAll(includeDeleted: true);
+    final cards = await cardsRepository.findAll(includeDeleted: true);
+    LoyaltyCard? card;
+    for (final item in cards) {
+      if (item.clientId == client.id) {
+        card = item;
+        break;
+      }
+    }
+    return (
+      client: client,
+      cars: cars,
+      brandNames: {
+        for (final brand in brands)
+          brand.id: brand.isDeleted ? '${brand.name} (удалена)' : brand.name,
+      },
+      card: card,
+    );
   }
 
   void _reload() {
@@ -50,7 +93,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   void _showError(Object error) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Не выполнить действие: $error')),
+      SnackBar(content: Text('Не удалось выполнить действие: $error')),
     );
   }
 
@@ -130,7 +173,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<({Client? client, List<Car> cars})>(
+    return FutureBuilder<
+      ({
+        Client? client,
+        List<Car> cars,
+        Map<int, String> brandNames,
+        LoyaltyCard? card,
+      })
+    >(
       future: _loading,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -154,6 +204,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         return _ClientDetailView(
           client: client,
           cars: snapshot.data!.cars,
+          brandNames: snapshot.data!.brandNames,
+          card: snapshot.data!.card,
           onSoftDelete: () => _confirmSoftDelete(client),
           onHardDelete: () => _confirmHardDelete(client),
           onRestore: () => _restore(client),
@@ -167,6 +219,8 @@ class _ClientDetailView extends StatelessWidget {
   const _ClientDetailView({
     required this.client,
     required this.cars,
+    required this.brandNames,
+    required this.card,
     required this.onSoftDelete,
     required this.onHardDelete,
     required this.onRestore,
@@ -174,6 +228,10 @@ class _ClientDetailView extends StatelessWidget {
 
   final Client client;
   final List<Car> cars;
+  final Map<int, String> brandNames;
+  final LoyaltyCard? card;
+
+  String _brandName(int id) => brandNames[id] ?? makeName(id);
   final VoidCallback onSoftDelete;
   final VoidCallback onHardDelete;
   final VoidCallback onRestore;
@@ -184,23 +242,15 @@ class _ClientDetailView extends StatelessWidget {
     return PageLayout(
       title: client.fullName,
       maxWidth: 720,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () {
-          if (context.canPop()) {
-            context.pop();
-          } else {
-            context.go('/clients');
-          }
-        },
-      ),
       actions: [
         if (client.isDeleted)
-          IconButton(
-            icon: const Icon(Icons.restore),
-            onPressed: onRestore,
-          )
+          IconButton(icon: const Icon(Icons.restore), onPressed: onRestore)
         else ...[
+          IconButton(
+            tooltip: 'Изменить',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => context.go('/clients/${client.id}/edit'),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: onSoftDelete,
@@ -235,6 +285,34 @@ class _ClientDetailView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           DetailSection(
+            title: 'Карта лояльности',
+            children: card == null
+                ? [
+                    Text(
+                      'У клиента нет карты лояльности.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ]
+                : [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Карта ${card!.number}'
+                        '${card!.isDeleted ? ' (удалена)' : ''}',
+                      ),
+                      subtitle: Text(
+                        'Скидка ${card!.discountPercent}% · '
+                        '${card!.active ? 'активна' : 'неактивна'} · '
+                        'выдана ${ruDate(card!.issuedAt)}',
+                      ),
+                      onTap: () => context.go('/loyalty-cards/${card!.id}'),
+                    ),
+                  ],
+          ),
+          const SizedBox(height: 16),
+          DetailSection(
             title: 'Автомобили',
             children: cars.isEmpty
                 ? [
@@ -251,7 +329,7 @@ class _ClientDetailView extends StatelessWidget {
                         contentPadding: EdgeInsets.zero,
                         title: Text(car.title),
                         subtitle: Text(
-                          '${car.year} · ${makeName(car.makeId)} · '
+                          '${car.year} · ${_brandName(car.makeId)} · '
                           '${car.mileage} км',
                         ),
                         onTap: () => context.go('/cars/${car.id}'),

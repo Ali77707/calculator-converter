@@ -21,6 +21,34 @@ class Client {
     this.deletedAt,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'lastName': lastName,
+    'firstName': firstName,
+    'middleName': middleName,
+    'city': city,
+    'phone': phone,
+    'email': email,
+    'registeredAt': registeredAt.toIso8601String(),
+    'deletedAt': deletedAt?.toIso8601String(),
+  };
+
+  factory Client.fromJson(Map<String, dynamic> json) => Client(
+    id: json['id'] as int? ?? 0,
+    lastName: json['lastName'] as String? ?? '',
+    firstName: json['firstName'] as String? ?? '',
+    middleName: json['middleName'] as String? ?? '',
+    city: json['city'] as String? ?? '',
+    phone: json['phone'] as String? ?? '',
+    email: json['email'] as String? ?? '',
+    registeredAt: json['registeredAt'] == null
+        ? DateTime.now()
+        : DateTime.tryParse(json['registeredAt'] as String) ?? DateTime.now(),
+    deletedAt: json['deletedAt'] == null
+        ? null
+        : DateTime.tryParse(json['deletedAt'] as String),
+  );
+
   bool get isDeleted => deletedAt != null;
 
   String get fullName => '$lastName $firstName $middleName';

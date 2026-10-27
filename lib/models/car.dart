@@ -25,6 +25,36 @@ class Car {
     this.deletedAt,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'vin': vin,
+    'year': year,
+    'mileage': mileage,
+    'makeId': makeId,
+    'bodyTypeId': bodyTypeId,
+    'fuel': fuel,
+    'price': price,
+    'ownerIds': ownerIds,
+    'deletedAt': deletedAt?.toIso8601String(),
+  };
+
+  factory Car.fromJson(Map<String, dynamic> json) => Car(
+    id: json['id'] as int? ?? 0,
+    title: json['title'] as String? ?? '',
+    vin: json['vin'] as String? ?? '',
+    year: json['year'] as int? ?? 0,
+    mileage: json['mileage'] as int? ?? 0,
+    makeId: json['makeId'] as int? ?? 0,
+    bodyTypeId: json['bodyTypeId'] as int? ?? 0,
+    fuel: json['fuel'] as String? ?? '',
+    price: json['price'] as int? ?? 0,
+    ownerIds: (json['ownerIds'] as List?)?.cast<int>() ?? const [],
+    deletedAt: json['deletedAt'] == null
+        ? null
+        : DateTime.tryParse(json['deletedAt'] as String),
+  );
+
   bool get isDeleted => deletedAt != null;
 
   Car copyWith({

@@ -4,7 +4,9 @@ import '../models/page_result.dart';
 
 abstract interface class CarRepository {
   Future<PageResult<Car>> find(CarQuery query);
+  Future<List<Car>> findAll({bool includeDeleted = false});
   Future<Car?> findById(int id);
+  Future<int> countByMake(int makeId);
 
   Future<List<Car>> findByOwner(int clientId);
   Future<Car> create(Car car);

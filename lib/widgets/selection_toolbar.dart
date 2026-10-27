@@ -42,9 +42,7 @@ class SelectionToolbar extends StatelessWidget {
           child: Text(
             statusText,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: hasSelection
-                  ? theme.colorScheme.onPrimaryContainer
-                  : null,
+              color: hasSelection ? theme.colorScheme.onPrimaryContainer : null,
             ),
           ),
         ),

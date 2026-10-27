@@ -21,9 +21,5 @@ class PageResult<T> {
 
   int get lastItemIndex => (page - 1) * size + items.length;
 
-  PageResult.empty()
-    : items = <T>[],
-      page = 1,
-      size = 10,
-      total = 0;
+  PageResult.empty() : items = <T>[], page = 1, size = 10, total = 0;
 }

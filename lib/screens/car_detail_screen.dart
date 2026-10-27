@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/car.dart';
 import '../models/client.dart';
 import '../models/dictionaries.dart';
+import '../repositories/brand_repository.dart';
 import '../repositories/car_repository.dart';
 import '../repositories/client_repository.dart';
 import '../widgets/detail_fields.dart';
@@ -23,8 +24,7 @@ class CarDetailScreen extends StatefulWidget {
 }
 
 class _CarDetailScreenState extends State<CarDetailScreen> {
-
-  late Future<({Car? car, List<Client> owners})> _loading;
+  late Future<({Car? car, List<Client> owners, String brandName})> _loading;
 
   @override
   void initState() {
@@ -32,18 +32,25 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     _loading = _load();
   }
 
-  Future<({Car? car, List<Client> owners})> _load() async {
-
+  Future<({Car? car, List<Client> owners, String brandName})> _load() async {
     final cars = context.read<CarRepository>();
     final clients = context.read<ClientRepository>();
+    final brands = context.read<BrandRepository>();
     final car = await cars.findById(widget.id);
-    if (car == null) return (car: null, owners: <Client>[]);
+    if (car == null) {
+      return (car: null, owners: <Client>[], brandName: '—');
+    }
     final owners = <Client>[];
     for (final ownerId in car.ownerIds) {
       final owner = await clients.findById(ownerId);
       if (owner != null) owners.add(owner);
     }
-    return (car: car, owners: owners);
+    final brand = await brands.findById(car.makeId);
+    return (
+      car: car,
+      owners: owners,
+      brandName: brand?.name ?? makeName(car.makeId),
+    );
   }
 
   void _reload() {
@@ -53,7 +60,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   void _showError(Object error) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Не выполнить действие: $error')),
+      SnackBar(content: Text('Не удалось выполнить действие: $error')),
     );
   }
 
@@ -133,7 +140,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<({Car? car, List<Client> owners})>(
+    return FutureBuilder<({Car? car, List<Client> owners, String brandName})>(
       future: _loading,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -157,6 +164,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
         return _CarDetailView(
           car: car,
           owners: snapshot.data!.owners,
+          brandName: snapshot.data!.brandName,
           onSoftDelete: () => _confirmSoftDelete(car),
           onHardDelete: () => _confirmHardDelete(car),
           onRestore: () => _restore(car),
@@ -170,6 +178,7 @@ class _CarDetailView extends StatelessWidget {
   const _CarDetailView({
     required this.car,
     required this.owners,
+    required this.brandName,
     required this.onSoftDelete,
     required this.onHardDelete,
     required this.onRestore,
@@ -177,6 +186,7 @@ class _CarDetailView extends StatelessWidget {
 
   final Car car;
   final List<Client> owners;
+  final String brandName;
   final VoidCallback onSoftDelete;
   final VoidCallback onHardDelete;
   final VoidCallback onRestore;
@@ -187,23 +197,15 @@ class _CarDetailView extends StatelessWidget {
     return PageLayout(
       title: car.title,
       maxWidth: 720,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () {
-          if (context.canPop()) {
-            context.pop();
-          } else {
-            context.go('/cars');
-          }
-        },
-      ),
       actions: [
         if (car.isDeleted)
-          IconButton(
-            icon: const Icon(Icons.restore),
-            onPressed: onRestore,
-          )
+          IconButton(icon: const Icon(Icons.restore), onPressed: onRestore)
         else ...[
+          IconButton(
+            tooltip: 'Изменить',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => context.go('/cars/${car.id}/edit'),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: onSoftDelete,
@@ -226,8 +228,11 @@ class _CarDetailView extends StatelessWidget {
             children: [
               DetailRow(label: 'Название', value: car.title),
               DetailRow(label: 'VIN', value: car.vin),
-              DetailRow(label: 'Марка', value: makeName(car.makeId)),
-              DetailRow(label: 'Тип кузова', value: bodyTypeName(car.bodyTypeId)),
+              DetailRow(label: 'Марка', value: brandName),
+              DetailRow(
+                label: 'Тип кузова',
+                value: bodyTypeName(car.bodyTypeId),
+              ),
               DetailRow(label: 'Топливо', value: car.fuel),
               DetailRow(label: 'Год выпуска', value: '${car.year}'),
               DetailRow(label: 'Пробег', value: '${car.mileage} км'),

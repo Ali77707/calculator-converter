@@ -1,31 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'repositories/brand_repository.dart';
 import 'repositories/car_repository.dart';
 import 'repositories/client_repository.dart';
+import 'repositories/in_memory_brand_repository.dart';
 import 'repositories/in_memory_car_repository.dart';
 import 'repositories/in_memory_client_repository.dart';
+import 'repositories/in_memory_loyalty_card_repository.dart';
+import 'repositories/in_memory_service_order_repository.dart';
+import 'repositories/loyalty_card_repository.dart';
+import 'repositories/service_order_repository.dart';
 import 'router.dart';
 import 'state/car_list_notifier.dart';
 import 'state/client_list_notifier.dart';
 import 'theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
-  themeController.load();
-  runApp(const AutoServiceApp());
+  final prefs = await SharedPreferences.getInstance();
+  await themeController.load();
+  runApp(AutoServiceApp(prefs: prefs));
 }
 
 class AutoServiceApp extends StatelessWidget {
-  const AutoServiceApp({super.key});
+  const AutoServiceApp({super.key, required this.prefs});
+
+  final SharedPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<CarRepository>(create: (_) => InMemoryCarRepository()),
-        Provider<ClientRepository>(create: (_) => InMemoryClientRepository()),
+        Provider<CarRepository>(
+          create: (_) => InMemoryCarRepository(prefs: prefs),
+        ),
+        Provider<ClientRepository>(
+          create: (_) => InMemoryClientRepository(prefs: prefs),
+        ),
+        Provider<BrandRepository>(
+          create: (_) => InMemoryBrandRepository(prefs: prefs),
+        ),
+        Provider<LoyaltyCardRepository>(
+          create: (_) => InMemoryLoyaltyCardRepository(prefs: prefs),
+        ),
+        Provider<ServiceOrderRepository>(
+          create: (_) => InMemoryServiceOrderRepository(prefs: prefs),
+        ),
         ChangeNotifierProvider<CarListNotifier>(
           create: (context) => CarListNotifier(context.read<CarRepository>()),
         ),

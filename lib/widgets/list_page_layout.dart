@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'home_button.dart';
 import 'theme_toggle_button.dart';
 
 class ListPageLayout extends StatelessWidget {
@@ -23,7 +24,11 @@ class ListPageLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title), actions: const [ThemeToggleButton()]),
+      appBar: AppBar(
+        title: Text(title),
+        leading: const HomeButton(),
+        actions: const [ThemeToggleButton()],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),

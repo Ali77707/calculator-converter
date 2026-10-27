@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-
-
 class PaginationBar extends StatelessWidget {
   const PaginationBar({
     super.key,

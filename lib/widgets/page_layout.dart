@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'home_button.dart';
 import 'theme_toggle_button.dart';
 
 class PageLayout extends StatelessWidget {
@@ -8,7 +9,7 @@ class PageLayout extends StatelessWidget {
     required this.title,
     required this.child,
     this.maxWidth = 520,
-    this.leading,
+    this.showHomeButton = true,
     this.actions,
   });
 
@@ -18,7 +19,7 @@ class PageLayout extends StatelessWidget {
 
   final double maxWidth;
 
-  final Widget? leading;
+  final bool showHomeButton;
 
   final List<Widget>? actions;
 
@@ -27,7 +28,7 @@ class PageLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        leading: leading,
+        leading: showHomeButton ? const HomeButton() : null,
         actions: [if (actions != null) ...actions!, const ThemeToggleButton()],
       ),
       body: SafeArea(

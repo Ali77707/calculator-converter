@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/car.dart';
 import '../models/car_query.dart';
 import '../models/dictionaries.dart';
+import '../repositories/brand_repository.dart';
 import '../state/car_list_notifier.dart';
 import '../state/load_status.dart';
 import '../widgets/debounced_text_field.dart';
@@ -29,8 +30,8 @@ class CarListScreen extends StatefulWidget {
 }
 
 class _CarListScreenState extends State<CarListScreen> {
-
   late String _lastLocation;
+  Map<int, String> _brandNames = const {};
 
   @override
   void initState() {
@@ -39,7 +40,22 @@ class _CarListScreenState extends State<CarListScreen> {
     _lastLocation = query.toLocation('/cars');
 
     context.read<CarListNotifier>().applyQuery(query);
+    _loadBrandNames();
   }
+
+  Future<void> _loadBrandNames() async {
+    final repository = context.read<BrandRepository>();
+    final brands = await repository.findAll(includeDeleted: true);
+    if (!mounted) return;
+    setState(() {
+      _brandNames = {
+        for (final brand in brands)
+          brand.id: brand.isDeleted ? '${brand.name} (удалена)' : brand.name,
+      };
+    });
+  }
+
+  String _makeName(int id) => _brandNames[id] ?? makeName(id);
 
   @override
   void didUpdateWidget(covariant CarListScreen oldWidget) {
@@ -68,9 +84,9 @@ class _CarListScreenState extends State<CarListScreen> {
 
   void _showError(Object error) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Не выполнить действие: $error')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Не удалось выполнить действие: $error')),
+    );
   }
 
   Future<void> _confirmDeleteSelected() async {
@@ -176,6 +192,12 @@ class _CarListScreenState extends State<CarListScreen> {
 
   List<Widget> _rowActions(BuildContext context, Car car) {
     return [
+      if (!car.isDeleted)
+        IconButton(
+          tooltip: 'Изменить',
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () => context.go('/cars/${car.id}/edit'),
+        ),
       IconButton(
         icon: const Icon(Icons.chevron_right),
         onPressed: () => context.go('/cars/${car.id}'),
@@ -222,6 +244,11 @@ class _CarListScreenState extends State<CarListScreen> {
         ),
         onDeleteSelected: _confirmDeleteSelected,
         deleteLabel: 'Удалить выбранные',
+        trailing: FilledButton.icon(
+          onPressed: () => context.go('/cars/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Добавить'),
+        ),
       ),
       filters: FilterPanel(
         onReset: _reset,
@@ -396,7 +423,7 @@ class _CarListScreenState extends State<CarListScreen> {
     );
   }
 
-  static final List<TableColumnSpec<Car>> _columns = [
+  List<TableColumnSpec<Car>> get _columns => [
     TableColumnSpec<Car>(
       label: 'Название',
       sortField: 'title',
@@ -422,7 +449,7 @@ class _CarListScreenState extends State<CarListScreen> {
     ),
     TableColumnSpec<Car>(
       label: 'Марка',
-      build: (car) => Text(makeName(car.makeId)),
+      build: (car) => Text(_makeName(car.makeId)),
     ),
     TableColumnSpec<Car>(
       label: 'Кузов',
@@ -459,7 +486,7 @@ class _CarListScreenState extends State<CarListScreen> {
           const SizedBox(height: 4),
           Text('VIN ${car.vin}', style: theme.textTheme.bodySmall),
           Text(
-            '${car.year} · ${makeName(car.makeId)} · '
+            '${car.year} · ${_makeName(car.makeId)} · '
             '${bodyTypeName(car.bodyTypeId)} · ${car.fuel}',
             style: theme.textTheme.bodyMedium,
           ),
@@ -476,6 +503,12 @@ class _CarListScreenState extends State<CarListScreen> {
                 icon: const Icon(Icons.chevron_right),
                 label: const Text('Открыть'),
               ),
+              if (!car.isDeleted)
+                TextButton.icon(
+                  onPressed: () => context.go('/cars/${car.id}/edit'),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Изменить'),
+                ),
               if (car.isDeleted)
                 TextButton.icon(
                   onPressed: () => _restore(car),
@@ -509,4 +542,3 @@ NamedOption? _optionById(List<NamedOption> options, int? id) {
   }
   return null;
 }
-

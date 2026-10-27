@@ -41,12 +41,10 @@ const List<String> clientCities = [
   'Краснодар',
 ];
 
-String makeName(int id) => makes.firstWhere(
-  (o) => o.id == id,
-  orElse: () => const NamedOption(0, '—'),
-).name;
+String makeName(int id) => makes
+    .firstWhere((o) => o.id == id, orElse: () => const NamedOption(0, '—'))
+    .name;
 
-String bodyTypeName(int id) => bodyTypes.firstWhere(
-  (o) => o.id == id,
-  orElse: () => const NamedOption(0, '—'),
-).name;
+String bodyTypeName(int id) => bodyTypes
+    .firstWhere((o) => o.id == id, orElse: () => const NamedOption(0, '—'))
+    .name;
